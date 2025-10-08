@@ -1,23 +1,27 @@
-
+#include <List.h>
 namespace pr {
 
 // ******************* Chainon
+//faute list.h ppas inclu
 Chainon::Chainon (const std::string & data, Chainon * next):data(data),next(next) {};
-
+//faute list.h ppas inclu
 size_t Chainon::length() {
 	size_t len = 1;
 	if (next != nullptr) {
 		len += next->length();
 	}
-	return length();
+	//faute len
+	return len;
 }
-
-void Chainon::print (std::ostream & os) {
+//faute il manque const pour la signature
+void Chainon::print (std::ostream & os) const {
 	os << data ;
 	if (next != nullptr) {
 		os << ", ";
+		//faute si il est null
+		next->print(os);
 	}
-	next->print(os);
+	
 }
 
 // ******************  List
@@ -40,12 +44,12 @@ void List::push_back (const std::string& val) {
 		fin->next = new Chainon(val);
 	}
 }
-
+//faute definition deux une dans .h une ici
 void List::push_front (const std::string& val) {
 	tete = new Chainon(val,tete);
 }
-
-bool empty() {
+//faute linkage
+bool List::empty() {
 	return tete == nullptr;
 }
 
@@ -56,9 +60,7 @@ size_t List::size() const {
 		return tete->length();
 	}
 }
-
-} // namespace pr
-
+//faute il était en dehors du namespace
 std::ostream & operator<< (std::ostream & os, const pr::List & vec)
 {
 	os << "[";
@@ -68,4 +70,6 @@ std::ostream & operator<< (std::ostream & os, const pr::List & vec)
 	os << "]";
 	return os;
 }
+
+} // namespace pr
 

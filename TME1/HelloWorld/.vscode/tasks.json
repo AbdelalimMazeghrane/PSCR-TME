@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build HelloWorld",
+        "type": "shell",
+        "command": "cmake --build build",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": "$gcc",
+        "detail": "Tâche pour compiler le projet HelloWorld avec CMake"
+      }
+    ]
+  }
+  

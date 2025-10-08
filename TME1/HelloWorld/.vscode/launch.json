@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug HelloWorld",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/build/HelloWorld",
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "preLaunchTask": "Build HelloWorld"
+      }
+    ]
+  }
+  

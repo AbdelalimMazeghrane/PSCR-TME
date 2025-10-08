@@ -1,0 +1,3 @@
+/home/abdelalim/git/PSCR-TME/TME1/HelloWorld/build/CMakeFiles/HelloWorld.dir
+/home/abdelalim/git/PSCR-TME/TME1/HelloWorld/build/CMakeFiles/edit_cache.dir
+/home/abdelalim/git/PSCR-TME/TME1/HelloWorld/build/CMakeFiles/rebuild_cache.dir
