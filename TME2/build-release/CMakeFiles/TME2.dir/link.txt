@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -Wall -DNDEBUG -flto CMakeFiles/TME2.dir/src/main.cpp.o -o TME2 

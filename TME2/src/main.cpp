@@ -5,7 +5,7 @@
 #include <string>
 #include <algorithm>
 #include <vector>
-
+#include "HashMap.h"
 // helper to clean a token (keep original comments near the logic)
 static std::string cleanWord(const std::string& raw) {
 	// une regex qui reconnait les caractères anormaux (négation des lettres)
@@ -62,20 +62,123 @@ int main(int argc, char** argv) {
 	} else if (mode == "unique") {
 		// skeleton for unique mode
 		// before the loop: declare a vector "seen"
-		// TODO
+		std::vector<std::string> seen;
+		
+		
 
 		while (input >> word) {
 			// élimine la ponctuation et les caractères spéciaux
 			word = cleanWord(word);
+			bool vu=false;
 
+			for(size_t i=0;i<seen.size();i++){
+			
+				if(word==seen[i]){
+					vu=true;
+					break;
+				}
+
+			}
+			
+			if(!vu){
+				seen.push_back(word);
+		
+			}
 			// add to seen if it is new
-			// TODO
+			
 		}
 	input.close();
 	// TODO
-	// cout << "Found " << seen.size() << " unique words." << endl;
+	 cout << "Found " << seen.size() << " unique words." << endl;
 
-	} else {
+	} 
+	else if(mode =="freq"){
+		std::vector<std::pair<std::string,int>> freq;
+		
+		
+
+		while (input >> word) {
+			// élimine la ponctuation et les caractères spéciaux
+			word = cleanWord(word);
+			bool v=false;
+			for(size_t i=0;i<freq.size();i++){
+				if(word == freq[i].first){
+					freq[i].second++;
+					v=true;
+					break;
+				}
+			}
+
+			if(!v){
+				freq.push_back(std::make_pair(word,1));
+			}
+			
+		}
+	input.close();
+	std::sort(freq.begin(), freq.end(),
+          [](const std::pair<std::string,int>& a,
+             const std::pair<std::string,int>& b) {
+                return a.second > b.second; // tri décroissant
+          });
+
+	// TODO
+	for(size_t i=0;i<freq.size();i++){
+		if(freq[i].first == "war" || freq[i].first == "peace" || freq[i].first == "toto"){
+			cout <<  freq[i].first << " : "<<freq[i].second << endl;
+		}
+	}
+	cout<<"les dix mots les plus fréquents :"<<std::endl;
+	for(size_t i=0;i<10;i++){
+		
+		cout <<  freq[i].first << " : "<<freq[i].second << endl;
+	}
+	 
+	}
+	else if(mode == "freqhash"){
+		HashMap<std::string,int> freq(10000);
+		while(input >> word){
+			word = cleanWord(word);
+			if(freq.get(word) == nullptr){
+				freq.put(word,1);
+			}else{
+				freq.put(word,*freq.get(word)+1);
+			}
+		}
+		std::vector<std::pair<std::string,int>> v=freq.toKeyValuePairs();
+		cout<<"les dix mots les plus fréquents :"<<std::endl;
+		for(size_t i=0;i<10;i++){
+		
+			cout <<  v[i].first << " : "<<v[i].second << endl;
+		}
+	}
+	else if(mode == "freqstd"){
+		std::unordered_map<std::string, int> freq;
+		while(input >> word){
+			word=cleanWord(word);
+			if(freq.find(word) == freq.end()){
+				freq[word]=1;
+			}else{
+				freq[word] += 1;
+			}
+		}
+
+		 std::vector<std::pair<std::string,int>> vec;
+    for(const auto& entry : freq){
+        vec.push_back(entry);
+    }
+
+    // Tri décroissant par fréquence
+    std::sort(vec.begin(), vec.end(),
+        [](const auto& a, const auto& b){
+            return a.second > b.second;
+        });
+
+    // Affichage
+    for(size_t i = 0; i < 10; ++i){
+        std::cout << vec[i].first << " : " << vec[i].second << std::endl;
+    }
+	}
+	else {
 		// unknown mode: print usage and exit
 		cerr << "Unknown mode '" << mode << "'. Supported modes: count, unique" << endl;
 		input.close();

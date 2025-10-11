@@ -24,3 +24,6 @@ add_executable(TME2
 
 # Specify include directories.
 target_include_directories(TME2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Note: HashMap.h is header-only, just make sure it's in src/ or an included directory
+# The compiler will find it automatically via #include "HashMap.h"
