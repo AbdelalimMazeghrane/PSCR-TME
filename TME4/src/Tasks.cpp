@@ -28,11 +28,23 @@ void treatImage(FileQueue& fileQueue, const std::filesystem::path& outputFolder)
 }
 
 
-/*
+
 void reader(FileQueue& fileQueue, ImageTaskQueue& imageQueue) {
     pr::thread_timer timer;
     while (true) {
-     // TODO
+        std::filesystem::path file = fileQueue.pop();
+        if (file == pr::FILE_POISON) {
+            imageQueue.push(pr::TASK_POISON);
+            break;
+        }
+
+        QImage img = pr::loadImage(file);
+
+        if (!img.isNull()) {
+            
+            pr::TaskData* task=new pr::TaskData{img, file};
+            imageQueue.push(task);
+        }
     }
     std::stringstream ss;
     ss << "Thread " << std::this_thread::get_id() << " (reader): " << timer << " ms CPU" << std::endl;
@@ -42,7 +54,19 @@ void reader(FileQueue& fileQueue, ImageTaskQueue& imageQueue) {
 void resizer(ImageTaskQueue& imageQueue, ImageTaskQueue& resizedQueue) {
     pr::thread_timer timer;
     while (true) {
-// TODO
+        pr::TaskData* td=imageQueue.pop();
+        if (td == pr::TASK_POISON) {
+            resizedQueue.push(pr::TASK_POISON);
+            delete td;
+            break;
+        }
+
+        if(!td->image.isNull()){
+            QImage rimg=pr::resizeImage(td->image);
+            TaskData* task=new pr::TaskData{rimg, td->filename};
+            resizedQueue.push(task);
+        }
+        delete td;
     }
     std::stringstream ss;
     ss << "Thread " << std::this_thread::get_id() << " (resizer): " << timer << " ms CPU" << std::endl;
@@ -52,13 +76,19 @@ void resizer(ImageTaskQueue& imageQueue, ImageTaskQueue& resizedQueue) {
 void saver(ImageTaskQueue& resizedQueue, const std::filesystem::path& outputFolder) {
     pr::thread_timer timer;
     while (true) {
-    // TODO
+        pr::TaskData* td=resizedQueue.pop();
+        if(td != pr::TASK_POISON){
+            delete td;
+            break;
+        }
+        pr::saveImage(td->image,outputFolder / td->filename);
+        delete td;
     }
     std::stringstream ss;
     ss << "Thread " << std::this_thread::get_id() << " (saver): " << timer << " ms CPU" << std::endl;
     std::cout << ss.str();
 }
-*/
 
 
-} // namespace pr
+
+}  //namespace pr

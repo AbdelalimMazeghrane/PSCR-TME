@@ -16,18 +16,19 @@ void treatImage(FileQueue& fileQueue, const std::filesystem::path& outputFolder)
 
 
 struct TaskData {
-    // TODO
+    QImage image;                         
+    std::filesystem::path filename; 
 };
-
-//using ImageTaskQueue = BoundedBlockingQueue<TaskData*>;
+constexpr TaskData* TASK_POISON = nullptr;
+using ImageTaskQueue = BoundedBlockingQueue<TaskData*>;
 // or
 //using ImageTaskQueue = BoundedBlockingQueue<TaskData>;
 
 // TODO
-//void reader(FileQueue& fileQueue, ImageTaskQueue& imageQueue);
-//void resizer(ImageTaskQueue& imageQueue, ImageTaskQueue& resizedQueue);
-//void saver(ImageTaskQueue& resizedQueue, const std::filesystem::path& outputFolder);
+void reader(FileQueue& fileQueue, ImageTaskQueue& imageQueue);
+void resizer(ImageTaskQueue& imageQueue, ImageTaskQueue& resizedQueue);
+void saver(ImageTaskQueue& resizedQueue, const std::filesystem::path& outputFolder);
 
-} // namespace pr
+}  //namespace pr
 
 #endif // TASKS_H

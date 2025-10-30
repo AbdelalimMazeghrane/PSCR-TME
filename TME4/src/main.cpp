@@ -23,12 +23,17 @@ struct Options {
     std::filesystem::path outputFolder = "output_images/";
     std::string mode = "resize";
     int num_threads = 4;
-
+    int nbRead = 1;               // nombre de threads pour lecture
+    int nbResize = 1;             // nombre de threads pour resize
+    int nbWrite = 1;   
   friend std::ostream &operator<<(std::ostream &os, const Options &opts) {
-    os << "input folder '" << opts.inputFolder.string() 
-       << "', output folder '" << opts.outputFolder.string() 
-       << "', mode '" << opts.mode 
-       << "', nthreads " << opts.num_threads;
+    os  << "input folder '" << opts.inputFolder.string() 
+        << "', output folder '" << opts.outputFolder.string() 
+        << "', mode '" << opts.mode 
+        << "', nthreads " << opts.num_threads
+        << ", read " << opts.nbRead
+        << ", resize " << opts.nbResize
+        << ", write " << opts.nbWrite;
     return os;
   }
 };
@@ -78,7 +83,99 @@ int main(int argc, char *argv[]) {
 
         // 5. Join the worker thread
         worker.join();
-    } else {
+    } 
+    
+    else if (opts.mode == "pipe_mt") {
+        pr::FileQueue fileQueue(10);
+        pr::ImageTaskQueue imageQueue(10);
+        pr::ImageTaskQueue resizedQueue(10);
+    
+        // Lancement des threads reader
+        std::vector<std::thread> readers;
+        for (int i = 0; i < opts.nbRead; ++i) {
+            readers.emplace_back(pr::reader, std::ref(fileQueue), std::ref(imageQueue));
+        }
+    
+        // Lancement des threads resizer
+        std::vector<std::thread> resizers;
+        for (int i = 0; i < opts.nbResize; ++i) {
+            resizers.emplace_back(pr::resizer, std::ref(imageQueue), std::ref(resizedQueue));
+        }
+    
+        // Lancement des threads saver
+        std::vector<std::thread> savers;
+        for (int i = 0; i < opts.nbWrite; ++i) {
+            savers.emplace_back(pr::saver, std::ref(resizedQueue), std::ref(opts.outputFolder));
+        }
+    
+        // Remplissage synchronisé de fileQueue (main thread)
+        pr::findImageFiles(opts.inputFolder, [&](const std::filesystem::path& file) {
+            fileQueue.push(file);
+        });
+    
+        // Emission de poison pills pour readers
+        for (int i = 0; i < opts.nbRead; ++i) {
+            fileQueue.push(pr::FILE_POISON);
+        }
+    
+        // Emission de poison pills pour resizers
+        for (int i = 0; i < opts.nbResize; ++i) {
+            imageQueue.push(pr::TASK_POISON);
+        }
+    
+        // Emission de poison pills pour savers
+        for (int i = 0; i < opts.nbWrite; ++i) {
+            resizedQueue.push(pr::TASK_POISON);
+        }
+    
+        // Jointure des threads
+        for (auto& t : readers) t.join();
+        for (auto& t : resizers) t.join();
+        for (auto& t : savers) t.join();
+    }
+    else if (opts.mode == "mt_pipeline") {
+        pr::FileQueue fileQueue(10);
+        pr::ImageTaskQueue imageQueue(10);
+        pr::ImageTaskQueue resizedQueue(10);
+
+        // 1 thread reader
+        std::thread readerThread(pr::reader, std::ref(fileQueue), std::ref(imageQueue));
+
+        // N threads resizer
+        std::vector<std::thread> resizerThreads;
+        for (int i = 0; i < opts.num_threads; ++i) {
+            resizerThreads.emplace_back(pr::resizer, std::ref(imageQueue), std::ref(resizedQueue));
+        }
+
+        // 1 thread saver
+        std::thread saverThread(pr::saver, std::ref(resizedQueue), std::ref(opts.outputFolder));
+
+        // Remplissage en fichier dans fileQueue (main thread)
+        pr::findImageFiles(opts.inputFolder, [&](const std::filesystem::path& file) {
+            fileQueue.push(file);
+        });
+
+        // Poison pill pour fileQueue (fin des fichiers à traiter)
+        fileQueue.push(pr::FILE_POISON);
+
+        // Poison pills pour imageQueue (1 poison par resizer)
+        for (int i = 0; i < opts.num_threads; ++i) {
+            imageQueue.push(pr::TASK_POISON);
+        }
+
+        // Poison pill unique pour resizedQueue (fin du pipeline)
+        resizedQueue.push(pr::TASK_POISON);
+
+        // Attendre la fin des threads
+        readerThread.join();
+        for (auto& t : resizerThreads) {
+            t.join();
+        }
+        saverThread.join();
+    }   
+
+
+    else {
         std::cerr << "Unknown mode '" << opts.mode << "'. Supported modes: resize, pipe" << std::endl;
         return 1;
     }
@@ -111,12 +208,22 @@ int parseOptions(int argc, char *argv[], Options& opts) {
         ->default_str(default_opts.outputFolder.string());
 
     cli_app.add_option("-m,--mode", opts.mode, "Processing mode")
-        ->check(CLI::IsMember({"resize", "pipe" /*, "pipe_mt" */})) // TODO : add modes
+        ->check(CLI::IsMember({"resize", "pipe" , "pipe_mt" })) // TODO : add modes
         ->default_str(default_opts.mode);
 
     cli_app.add_option("-n,--nthreads", opts.num_threads, "Number of threads")
         ->check(CLI::PositiveNumber)
         ->default_val(default_opts.num_threads);
+    cli_app.add_option("-r,--nbread", opts.nbRead, "Number of reader threads")
+        ->check(CLI::PositiveNumber)
+        ->default_val(opts.nbRead);
+    cli_app.add_option("-s,--nbresize", opts.nbResize, "Number of resize threads")
+        ->check(CLI::PositiveNumber)
+        ->default_val(opts.nbResize);
+    cli_app.add_option("-w,--nbwrite", opts.nbWrite, "Number of write threads")
+        ->check(CLI::PositiveNumber)
+        ->default_val(opts.nbWrite);
+
 
     try {
         cli_app.parse(argc, argv);
